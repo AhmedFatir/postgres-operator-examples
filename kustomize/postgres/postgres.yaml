@@ -1,13 +1,14 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: hippo
+  name: expcluster
 spec:
   postgresVersion: 17
   users:
-    - name: rhino
+    - name: expuser
       databases:
-        - zoo
+        - odoodb
+      options: 'SUPERUSER'
   instances:
     - name: instance1
       dataVolumeClaimSpec:
