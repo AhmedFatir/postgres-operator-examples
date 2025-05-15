@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: bootstrap-sql
-  namespace: postgres-operator
+  namespace: experio
 data:
   init.sql: |
     ALTER DATABASE odoodb OWNER TO expuser;
@@ -12,7 +12,7 @@ apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: expcluster
-  namespace: postgres-operator
+  namespace: experio
 spec:
   postgresVersion: 17
   users:

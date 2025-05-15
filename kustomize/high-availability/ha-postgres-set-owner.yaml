@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: bootstrap-sql
-  namespace: postgres-operator
+  namespace: experio
 data:
   01-init.sql: |
     ALTER DATABASE odoodb OWNER TO expuser;
