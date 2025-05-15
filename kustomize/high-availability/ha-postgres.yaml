@@ -23,8 +23,9 @@ spec:
     name: bootstrap-sql
     key: init.sql
   instances:
+    # Primary instance set with read-write capabilities
     - name: pgha1
-      replicas: 2
+      replicas: 2  # Primary and one synchronous replica for HA
       dataVolumeClaimSpec:
         accessModes:
           - "ReadWriteOnce"
@@ -41,6 +42,73 @@ spec:
                   matchLabels:
                     postgres-operator.crunchydata.com/cluster: expcluster
                     postgres-operator.crunchydata.com/instance-set: pgha1
+      resources:
+        limits:
+          cpu: "1"
+          memory: 1Gi
+        requests:
+          cpu: "250m"
+          memory: 512Mi
+
+    # Read-only instance set
+    - name: pgha2
+      replicas: 2
+      dataVolumeClaimSpec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    postgres-operator.crunchydata.com/cluster: expcluster
+                    postgres-operator.crunchydata.com/instance-set: pgha2
+      resources:
+        limits:
+          cpu: "500m"
+          memory: 512Mi
+        requests:
+          cpu: "100m"
+          memory: 256Mi
+
+  # Global PostgreSQL configuration
+  patroni:
+    dynamicConfiguration:
+      bootstrap:
+        dcs:
+          postgresql:
+            parameters:
+              shared_preload_libraries: 'pg_stat_statements'
+              max_wal_senders: '10'
+              max_replication_slots: '10'
+              wal_level: logical
+            pg_hba:
+              - host all all 0.0.0.0/0 md5
+              - host replication replicator 0.0.0.0/0 md5
+          standby_cluster:
+            create_replica_methods:
+              - basebackup
+            host: expcluster-pgha1
+            nodes:
+              - name: pgha2-1
+                options:
+                  - application_name: pgha2-1
+                  - default_transaction_read_only: on
+              - name: pgha2-2
+                options:
+                  - application_name: pgha2-2
+                  - default_transaction_read_only: on
+          slots:
+            pgha2_1:
+              type: physical
+            pgha2_2:
+              type: physical
   backups:
     pgbackrest:
       repos:
@@ -65,10 +133,8 @@ spec:
                   matchLabels:
                     postgres-operator.crunchydata.com/cluster: expcluster
                     postgres-operator.crunchydata.com/role: pgbouncer
-  patroni:
-    dynamicConfiguration:
-      bootstrap:
-        dcs:
-          postgresql:
-            parameters:
-              shared_preload_libraries: 'pg_stat_statements'
+      config:
+        global:
+          pool_mode: transaction
+          max_client_conn: "1000"
+          default_pool_size: "20"
