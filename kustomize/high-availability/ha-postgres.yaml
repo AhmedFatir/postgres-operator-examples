@@ -1,49 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bootstrap-sql
+  namespace: postgres-operator
+data:
+  init.sql: |
+    ALTER DATABASE odoodb OWNER TO expuser;
+
+---
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: hippo-ha
+  name: expcluster
+  namespace: postgres-operator
 spec:
   postgresVersion: 17
+  users:
+    - name: expuser
+      databases:
+        - odoodb
+  databaseInitSQL:
+    name: bootstrap-sql
+    key: init.sql
   instances:
     - name: pgha1
       replicas: 2
       dataVolumeClaimSpec:
         accessModes:
-        - "ReadWriteOnce"
+          - "ReadWriteOnce"
         resources:
           requests:
             storage: 1Gi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  postgres-operator.crunchydata.com/cluster: hippo-ha
-                  postgres-operator.crunchydata.com/instance-set: pgha1
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    postgres-operator.crunchydata.com/cluster: expcluster
+                    postgres-operator.crunchydata.com/instance-set: pgha1
   backups:
     pgbackrest:
       repos:
-      - name: repo1
-        volume:
-          volumeClaimSpec:
-            accessModes:
-            - "ReadWriteOnce"
-            resources:
-              requests:
-                storage: 1Gi
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes:
+                - "ReadWriteOnce"
+              resources:
+                requests:
+                  storage: 1Gi
   proxy:
     pgBouncer:
       replicas: 2
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            podAffinityTerm:
-              topologyKey: kubernetes.io/hostname
-              labelSelector:
-                matchLabels:
-                  postgres-operator.crunchydata.com/cluster: hippo-ha
-                  postgres-operator.crunchydata.com/role: pgbouncer
+            - weight: 1
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    postgres-operator.crunchydata.com/cluster: expcluster
+                    postgres-operator.crunchydata.com/role: pgbouncer
+  patroni:
+    dynamicConfiguration:
+      bootstrap:
+        dcs:
+          postgresql:
+            parameters:
+              shared_preload_libraries: 'pg_stat_statements'

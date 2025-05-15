@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bootstrap-sql
+  namespace: postgres-operator
+data:
+  01-init.sql: |
+    ALTER DATABASE odoodb OWNER TO expuser;
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: expcluster
+spec:
+  patroni:
+    dynamicConfiguration:
+      bootstrap:
+        dcs:
+          postgresql:
+            parameters:
+              shared_preload_libraries: 'pg_stat_statements'
+  postgresVersion: 15
+  initialization:
+    sql:
+      configMap:
+        name: bootstrap-sql
