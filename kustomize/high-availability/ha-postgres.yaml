@@ -122,7 +122,7 @@ spec:
                   storage: 1Gi
   proxy:
     pgBouncer:
-      replicas: 2
+      replicas: 1
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -133,6 +133,13 @@ spec:
                   matchLabels:
                     postgres-operator.crunchydata.com/cluster: expcluster
                     postgres-operator.crunchydata.com/role: pgbouncer
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
       config:
         global:
           pool_mode: transaction

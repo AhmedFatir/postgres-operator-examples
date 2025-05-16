@@ -6,4 +6,4 @@ namespace: experio
 resources:
 - ha-postgres.yaml
 - ha-secrets.yaml
-# - ha-postgres-hpa.yaml
+- ha-pgbouncer-hpa.yaml
