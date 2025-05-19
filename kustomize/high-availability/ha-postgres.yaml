@@ -88,6 +88,8 @@ spec:
               max_wal_senders: '10'
               max_replication_slots: '10'
               wal_level: logical
+              synchronous_commit: 'on'
+              synchronous_standby_names: '*'  # Enable synchronous replication
             pg_hba:
               - host all all 0.0.0.0/0 md5
               - host replication replicator 0.0.0.0/0 md5
