@@ -13,6 +13,13 @@ kind: PostgresCluster
 metadata:
   name: expcluster
   namespace: experio
+  labels:
+    app.kubernetes.io/name: postgresql
+    vendor: crunchydata
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "9187"
 spec:
   postgresVersion: 17
   users:
@@ -147,3 +154,14 @@ spec:
           pool_mode: transaction
           max_client_conn: "1000"
           default_pool_size: "20"
+    
+  monitoring:
+    pgmonitor:
+      exporter:
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
